@@ -6,6 +6,7 @@ use App\Models\Cartas;
 use App\Models\Momentos;
 use App\Models\valores_compartidos;
 use App\Models\Cancion;
+use App\Models\Dibujo;
 use App\Models\respuestas;
 use Illuminate\Http\Request;
 
@@ -146,5 +147,49 @@ class RelationshipController extends Controller
         ]);
 
         return redirect()->route('musica')->with('success', '¡Canción agregada con éxito!');
+    }
+
+    /**
+     * Muestra la galería de dibujos.
+     */
+    public function dibujos()
+    {
+        $dibujos = Dibujo::orderBy('created_at', 'desc')->get();
+        return view('dibujos', compact('dibujos'));
+    }
+
+    /**
+     * Guarda un dibujo nuevo (visitante o admin).
+     */
+    public function storeDibujo(Request $request)
+    {
+        $request->validate([
+            'titulo' => 'nullable|string|max:255',
+            'imagen' => 'required|string', // base64 PNG
+        ]);
+
+        // Verificar que sea un data URI válido de imagen
+        if (!str_starts_with($request->imagen, 'data:image/')) {
+            return response()->json(['error' => 'Imagen inválida.'], 422);
+        }
+
+        $nombre = auth()->check() ? 'Admin' : (session('visitor_name') ?? 'Visitante');
+
+        $dibujo = Dibujo::create([
+            'titulo'     => $request->titulo ?: null,
+            'imagen'     => $request->imagen,
+            'creado_por' => $nombre,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'dibujo'  => [
+                'id'         => $dibujo->id,
+                'titulo'     => $dibujo->titulo,
+                'imagen'     => $dibujo->imagen,
+                'creado_por' => $dibujo->creado_por,
+                'fecha'      => $dibujo->created_at->format('d/m/Y'),
+            ],
+        ]);
     }
 }

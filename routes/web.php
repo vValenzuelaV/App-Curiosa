@@ -22,6 +22,10 @@ Route::middleware('visitor.identified')->group(function () {
 
     // Agregar canción por visitante
     Route::post('/musica/canciones', [RelationshipController::class, 'storeCancion'])->name('canciones.visitor.store');
+
+    // Dibujos
+    Route::get('/dibujos', [RelationshipController::class, 'dibujos'])->name('dibujos');
+    Route::post('/dibujos', [RelationshipController::class, 'storeDibujo'])->name('dibujos.store');
 });
 
 // ==========================================
@@ -62,6 +66,9 @@ Route::middleware('auth')->prefix('admin')->as('admin.')->group(function () {
     Route::post('/canciones', [AdminController::class, 'storeCancion'])->name('canciones.store');
     Route::put('/canciones/{id}', [AdminController::class, 'updateCancion'])->name('canciones.update');
     Route::delete('/canciones/{id}', [AdminController::class, 'destroyCancion'])->name('canciones.destroy');
+
+    // Dibujos (solo eliminar)
+    Route::delete('/dibujos/{id}', [AdminController::class, 'destroyDibujo'])->name('dibujos.destroy');
 
     // CRUD Respuestas
     Route::put('/respuestas/{id}', [AdminController::class, 'updateRespuesta'])->name('respuestas.update');

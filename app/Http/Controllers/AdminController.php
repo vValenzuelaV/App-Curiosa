@@ -6,6 +6,7 @@ use App\Models\Cartas;
 use App\Models\Momentos;
 use App\Models\valores_compartidos;
 use App\Models\Cancion;
+use App\Models\Dibujo;
 use App\Models\respuestas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -336,5 +337,20 @@ class AdminController extends Controller
         $respuesta->delete();
 
         return redirect()->back()->with('success', 'Respuesta eliminada con éxito.');
+    }
+
+    // ==========================================
+    // GESTIÓN DE DIBUJOS (ADMIN)
+    // ==========================================
+
+    /**
+     * Elimina un dibujo (solo admin).
+     */
+    public function destroyDibujo($id)
+    {
+        $dibujo = Dibujo::findOrFail($id);
+        $dibujo->delete();
+
+        return redirect()->route('dibujos')->with('success', 'Dibujo eliminado con éxito.');
     }
 }

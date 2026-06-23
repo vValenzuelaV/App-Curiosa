@@ -324,6 +324,9 @@
         <a href="{{ route('musica') }}" class="btn btn-secondary">
             ♫ Nuestra Música
         </a>
+        <a href="{{ route('dibujos') }}" class="btn btn-secondary">
+            ✏ Nuestros Dibujos
+        </a>
     </div>
 
 </div>
