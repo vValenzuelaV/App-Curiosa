@@ -360,7 +360,7 @@
             
             <div class="form-group">
                 <label for="respuesta-comentario">Comentario / Respuesta</label>
-                <textarea name="comentario" id="respuesta-comentario" class="form-control" style="min-height: 150px; resize: vertical;" required></textarea>
+                <textarea name="comentario" id="respuesta-comentario" class="form-control" style="min-height: 150px; resize: vertical;" maxlength="6000" required></textarea>
             </div>
             
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">

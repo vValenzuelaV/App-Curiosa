@@ -8,6 +8,7 @@ use App\Models\valores_compartidos;
 use App\Models\Cancion;
 use App\Models\Dibujo;
 use App\Models\respuestas;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -28,12 +29,23 @@ class AdminController extends Controller
             'fecha' => 'required|date',
         ]);
 
-        Cartas::create([
+        $carta = Cartas::create([
             'titulo' => $request->titulo,
             'contenido' => $request->contenido,
             'fecha' => $request->fecha,
             'leida' => false,
         ]);
+
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '✉️ Nueva carta para ti',
+                "Tienes una nueva carta escrita con mucho cariño: «{$request->titulo}».",
+                '/cartas#envelope-' . $carta->id
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
+        }
 
         return redirect()->route('cartas')->with('success', 'Carta guardada con éxito.');
     }
@@ -107,6 +119,17 @@ class AdminController extends Controller
             'descripcion' => $request->descripcion,
             'foto' => $filename,
         ]);
+
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '📸 Nuevo momento guardado',
+                "Se agregó un nuevo momento especial: «{$request->titulo}».",
+                '/momentos'
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
+        }
 
         return redirect()->route('momentos')->with('success', 'Momento guardado con éxito.');
     }
@@ -183,11 +206,23 @@ class AdminController extends Controller
             'descripcion' => 'required|string',
         ]);
 
+        $icono = $request->icono ?: '✦';
         valores_compartidos::create([
             'titulo'      => $request->titulo,
-            'icono'       => $request->icono ?: '✦',
+            'icono'       => $icono,
             'descripcion' => $request->descripcion,
         ]);
+
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '🤝 Nuevo compromiso agregado',
+                "{$icono} «{$request->titulo}»",
+                '/'
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
+        }
 
         return redirect()->route('home')->with('success', 'Compromiso agregado con éxito.');
     }
@@ -289,6 +324,17 @@ class AdminController extends Controller
             'agregado_por' => 'Admin',
             'orden'        => $request->orden ?? 0,
         ]);
+
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '🎵 Nueva canción agregada',
+                "Admin agregó «{$request->titulo}» a la playlist.",
+                '/musica'
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
+        }
 
         return redirect()->route('musica')->with('success', 'Canción agregada con éxito.');
     }
@@ -399,7 +445,7 @@ class AdminController extends Controller
     public function updateRespuesta(Request $request, $id)
     {
         $request->validate([
-            'comentario' => 'required|string|max:2000',
+            'comentario' => 'required|string|max:6000',
         ]);
 
         $respuesta = respuestas::findOrFail($id);

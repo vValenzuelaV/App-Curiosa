@@ -5,6 +5,14 @@ use App\Http\Controllers\RelationshipController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorAuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PushSubscriptionController;
+
+// ==========================================
+// PUSH NOTIFICATIONS (acceso público)
+// ==========================================
+Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidPublicKey'])->name('push.vapid');
+Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribe'])->name('push.subscribe');
+Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->name('push.unsubscribe');
 
 // ==========================================
 // RUTAS PROTEGIDAS PARA VISITANTES (REQUIIEREN IDENTIFICACIÓN)

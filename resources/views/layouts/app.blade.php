@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Para Feñi | Espacio de Reflexión</title>
 
     <!-- Google Fonts: Cormorant Garamond para textos íntimos y cartas; Inter para controles -->
@@ -484,5 +485,68 @@
     @endif
 
     @yield('scripts')
+
+    {{-- ── WEB PUSH NOTIFICATIONS ── --}}
+    <script>
+    (function () {
+        // Solo registrar si el navegador soporta Service Workers y Push
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+        const VAPID_PUBLIC_KEY = '{{ env("VAPID_PUBLIC_KEY") }}';
+
+        // Convertir la clave VAPID de base64url a Uint8Array
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+        }
+
+        async function registerPush() {
+            try {
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                await navigator.serviceWorker.ready;
+
+                // Verificar si ya hay suscripción activa
+                let sub = await reg.pushManager.getSubscription();
+
+                if (!sub) {
+                    // Pedir permiso
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') return;
+
+                    // Suscribirse
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly:      true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                    });
+                }
+
+                // Guardar suscripción en el servidor
+                const key   = sub.getKey('p256dh');
+                const token = sub.getKey('auth');
+
+                await fetch('/push/subscribe', {
+                    method:  'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({
+                        endpoint:   sub.endpoint,
+                        public_key: key   ? btoa(String.fromCharCode(...new Uint8Array(key)))   : null,
+                        auth_token: token ? btoa(String.fromCharCode(...new Uint8Array(token))) : null,
+                    }),
+                });
+
+            } catch (err) {
+                console.warn('Push registration error:', err);
+            }
+        }
+
+        // Registrar después de que la página cargue completamente
+        window.addEventListener('load', registerPush);
+    })();
+    </script>
 </body>
 </html>

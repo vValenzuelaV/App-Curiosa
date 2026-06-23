@@ -8,6 +8,7 @@ use App\Models\valores_compartidos;
 use App\Models\Cancion;
 use App\Models\Dibujo;
 use App\Models\respuestas;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 
 class RelationshipController extends Controller
@@ -70,7 +71,7 @@ class RelationshipController extends Controller
         $hasSessionName = session()->has('visitor_name');
 
         $rules = [
-            'comentario' => 'required|string|max:2000',
+            'comentario' => 'required|string|max:6000',
         ];
 
         if (!$hasSessionName) {
@@ -97,6 +98,17 @@ class RelationshipController extends Controller
         // Marcar la carta como leída si recibe una respuesta
         if (!$carta->leida) {
             $carta->update(['leida' => true]);
+        }
+
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '💬 Nueva respuesta',
+                "{$nombre} respondió a tu carta \u00ab{$carta->titulo}\u00bb.",
+                '/cartas#envelope-' . $carta->id
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
         }
 
         return redirect()->route('cartas')->with('success', 'Tu respuesta ha sido guardada con cariño.');
@@ -171,6 +183,17 @@ class RelationshipController extends Controller
             'orden'        => 0,
         ]);
 
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '🎵 Nueva canción agregada',
+                "{$nombre} agregó \u00ab{$request->titulo}\u00bb a la playlist.",
+                '/musica'
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
+        }
+
         return redirect()->route('musica')->with('success', '¡Canción agregada con éxito!');
     }
 
@@ -205,6 +228,17 @@ class RelationshipController extends Controller
             'imagen'     => $request->imagen,
             'creado_por' => $nombre,
         ]);
+
+        // Enviar notificación push
+        try {
+            (new PushNotificationService())->send(
+                '🎨 Nuevo dibujo',
+                "{$nombre} agregó un nuevo dibujo" . ($request->titulo ? ": \u00ab{$request->titulo}\u00bb" : '.'),
+                '/dibujos'
+            );
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si la notificación falla
+        }
 
         return response()->json([
             'success' => true,
