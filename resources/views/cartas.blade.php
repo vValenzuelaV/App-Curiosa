@@ -550,12 +550,12 @@
                             <textarea name="comentario"
                                 id="comentario-{{ $carta->id }}"
                                 placeholder="Escribe aquí lo que sientes, tus pensamientos o cualquier cosa que desees expresarme..."
-                                maxlength="1000"
+                                maxlength="2000"
                                 required
                                 oninput="updateCounter({{ $carta->id }}, this.value.length)">{{ old('comentario') }}</textarea>
 
                             <div class="response-form-footer">
-                                <span class="char-counter" id="counter-{{ $carta->id }}">0 / 1000</span>
+                                <span class="char-counter" id="counter-{{ $carta->id }}">0 / 2000</span>
                                 <button type="submit" class="btn btn-primary" onclick="return validateRespuesta({{ $carta->id }})">
                                     Enviar Respuesta
                                 </button>
@@ -698,11 +698,11 @@
     function updateCounter(cartaId, length) {
         const counter = document.getElementById(`counter-${cartaId}`);
         if (!counter) return;
-        counter.textContent = `${length} / 1000`;
+        counter.textContent = `${length} / 2000`;
         counter.classList.remove('warning', 'danger');
-        if (length >= 1000) {
+        if (length >= 2000) {
             counter.classList.add('danger');
-        } else if (length >= 800) {
+        } else if (length >= 1600) {
             counter.classList.add('warning');
         }
     }
@@ -717,8 +717,8 @@
             textarea.focus();
             return false;
         }
-        if (text.length > 1000) {
-            alert(`⚠ Tu respuesta tiene ${text.length} caracteres. El límite es de 1000 caracteres. Por favor acórtala un poco.`);
+        if (text.length > 2000) {
+            alert(`⚠ Tu respuesta tiene ${text.length} caracteres. El límite es de 2000 caracteres. Por favor acórtala un poco.`);
             textarea.focus();
             return false;
         }

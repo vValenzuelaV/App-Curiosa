@@ -70,7 +70,7 @@ class RelationshipController extends Controller
         $hasSessionName = session()->has('visitor_name');
 
         $rules = [
-            'comentario' => 'required|string|max:1000',
+            'comentario' => 'required|string|max:2000',
         ];
 
         if (!$hasSessionName) {
@@ -124,7 +124,7 @@ class RelationshipController extends Controller
             'titulo'       => 'required|string|max:255',
             'artista'      => 'nullable|string|max:255',
             'descripcion'  => 'nullable|string|max:500',
-            'url_original' => 'required_without:archivo_musica|nullable|string|max:1000',
+            'url_original' => 'required_without:archivo_musica|nullable|string|max:2000',
             'archivo_musica' => 'required_without:url_original|nullable|file|mimes:mp3,wav,ogg,mp4,webm|max:15360',
         ]);
 
