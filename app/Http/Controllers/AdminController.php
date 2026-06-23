@@ -237,14 +237,38 @@ class AdminController extends Controller
             'titulo'      => 'required|string|max:255',
             'artista'     => 'nullable|string|max:255',
             'descripcion' => 'nullable|string|max:500',
-            'url_original' => 'required|string|max:1000',
+            'url_original' => 'required_without:archivo_musica|nullable|string|max:1000',
+            'archivo_musica' => 'required_without:url_original|nullable|file|mimes:mp3,wav,ogg,mp4,webm|max:15360',
             'orden'       => 'nullable|integer',
         ]);
 
-        $parsed = Cancion::parseUrl($request->url_original);
+        $embed_url = null;
+        $plataforma = null;
+        $archivo_path = null;
 
-        if (!$parsed) {
-            return back()->withErrors(['url_original' => 'El link no es válido. Usa un link de Spotify o YouTube.'])->withInput();
+        if ($request->hasFile('archivo_musica')) {
+            $file = $request->file('archivo_musica');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            if (!File::isDirectory(public_path('music'))) {
+                File::makeDirectory(public_path('music'), 0755, true, true);
+            }
+            $file->move(public_path('music'), $filename);
+            
+            $archivo_path = $filename;
+            
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (in_array($ext, ['mp4', 'webm'])) {
+                $plataforma = 'local_video';
+            } else {
+                $plataforma = 'local_audio';
+            }
+        } elseif ($request->url_original) {
+            $parsed = Cancion::parseUrl($request->url_original);
+            if (!$parsed) {
+                return back()->withErrors(['url_original' => 'El link no es válido. Usa un link de Spotify o YouTube.'])->withInput();
+            }
+            $embed_url = $parsed['embed_url'];
+            $plataforma = $parsed['plataforma'];
         }
 
         Cancion::create([
@@ -252,8 +276,9 @@ class AdminController extends Controller
             'artista'      => $request->artista,
             'descripcion'  => $request->descripcion,
             'url_original' => $request->url_original,
-            'embed_url'    => $parsed['embed_url'],
-            'plataforma'   => $parsed['plataforma'],
+            'embed_url'    => $embed_url,
+            'archivo_path' => $archivo_path,
+            'plataforma'   => $plataforma,
             'agregado_por' => 'Admin',
             'orden'        => $request->orden ?? 0,
         ]);
@@ -270,24 +295,62 @@ class AdminController extends Controller
             'titulo'      => 'required|string|max:255',
             'artista'     => 'nullable|string|max:255',
             'descripcion' => 'nullable|string|max:500',
-            'url_original' => 'required|string|max:1000',
+            'url_original' => 'nullable|string|max:1000',
+            'archivo_musica' => 'nullable|file|mimes:mp3,wav,ogg,mp4,webm|max:15360',
             'orden'       => 'nullable|integer',
         ]);
 
         $cancion = Cancion::findOrFail($id);
-        $parsed = Cancion::parseUrl($request->url_original);
+        
+        $embed_url = $cancion->embed_url;
+        $plataforma = $cancion->plataforma;
+        $archivo_path = $cancion->archivo_path;
+        $url_original = $cancion->url_original;
 
-        if (!$parsed) {
-            return back()->withErrors(['url_original' => 'El link no es válido. Usa un link de Spotify o YouTube.'])->withInput();
+        if ($request->hasFile('archivo_musica')) {
+            if ($cancion->archivo_path && File::exists(public_path('music/' . $cancion->archivo_path))) {
+                File::delete(public_path('music/' . $cancion->archivo_path));
+            }
+
+            $file = $request->file('archivo_musica');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            if (!File::isDirectory(public_path('music'))) {
+                File::makeDirectory(public_path('music'), 0755, true, true);
+            }
+            $file->move(public_path('music'), $filename);
+            
+            $archivo_path = $filename;
+            $url_original = null;
+            $embed_url = null;
+            
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (in_array($ext, ['mp4', 'webm'])) {
+                $plataforma = 'local_video';
+            } else {
+                $plataforma = 'local_audio';
+            }
+        } elseif ($request->url_original && $request->url_original !== $cancion->url_original) {
+            $parsed = Cancion::parseUrl($request->url_original);
+            if (!$parsed) {
+                return back()->withErrors(['url_original' => 'El link no es válido. Usa un link de Spotify o YouTube.'])->withInput();
+            }
+            if ($cancion->archivo_path && File::exists(public_path('music/' . $cancion->archivo_path))) {
+                File::delete(public_path('music/' . $cancion->archivo_path));
+            }
+            $archivo_path = null;
+            $url_original = $request->url_original;
+            $embed_url = $parsed['embed_url'];
+            $plataforma = $parsed['plataforma'];
         }
 
         $cancion->update([
             'titulo'       => $request->titulo,
             'artista'      => $request->artista,
             'descripcion'  => $request->descripcion,
-            'url_original' => $request->url_original,
-            'embed_url'    => $parsed['embed_url'],
-            'plataforma'   => $parsed['plataforma'],
+            'url_original' => $url_original,
+            'embed_url'    => $embed_url,
+            'archivo_path' => $archivo_path,
+            'plataforma'   => $plataforma,
             'agregado_por' => $cancion->agregado_por ?? 'Admin',
             'orden'        => $request->orden ?? 0,
         ]);
@@ -301,6 +364,11 @@ class AdminController extends Controller
     public function destroyCancion($id)
     {
         $cancion = Cancion::findOrFail($id);
+        
+        if ($cancion->archivo_path && File::exists(public_path('music/' . $cancion->archivo_path))) {
+            File::delete(public_path('music/' . $cancion->archivo_path));
+        }
+        
         $cancion->delete();
 
         return redirect()->route('musica')->with('success', 'Canción eliminada con éxito.');

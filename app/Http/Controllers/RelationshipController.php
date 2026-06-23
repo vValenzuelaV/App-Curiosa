@@ -124,13 +124,37 @@ class RelationshipController extends Controller
             'titulo'       => 'required|string|max:255',
             'artista'      => 'nullable|string|max:255',
             'descripcion'  => 'nullable|string|max:500',
-            'url_original' => 'required|string|max:1000',
+            'url_original' => 'required_without:archivo_musica|nullable|string|max:1000',
+            'archivo_musica' => 'required_without:url_original|nullable|file|mimes:mp3,wav,ogg,mp4,webm|max:15360',
         ]);
 
-        $parsed = Cancion::parseUrl($request->url_original);
+        $embed_url = null;
+        $plataforma = null;
+        $archivo_path = null;
 
-        if (!$parsed) {
-            return back()->withErrors(['url_original' => 'El link no es válido. Usa un link de Spotify o YouTube.'])->withInput();
+        if ($request->hasFile('archivo_musica')) {
+            $file = $request->file('archivo_musica');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            if (!\Illuminate\Support\Facades\File::isDirectory(public_path('music'))) {
+                \Illuminate\Support\Facades\File::makeDirectory(public_path('music'), 0755, true, true);
+            }
+            $file->move(public_path('music'), $filename);
+            
+            $archivo_path = $filename;
+            
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (in_array($ext, ['mp4', 'webm'])) {
+                $plataforma = 'local_video';
+            } else {
+                $plataforma = 'local_audio';
+            }
+        } elseif ($request->url_original) {
+            $parsed = Cancion::parseUrl($request->url_original);
+            if (!$parsed) {
+                return back()->withErrors(['url_original' => 'El link no es válido. Usa un link de Spotify o YouTube.'])->withInput();
+            }
+            $embed_url = $parsed['embed_url'];
+            $plataforma = $parsed['plataforma'];
         }
 
         $nombre = session('visitor_name') ?? 'Visitante';
@@ -140,8 +164,9 @@ class RelationshipController extends Controller
             'artista'      => $request->artista,
             'descripcion'  => $request->descripcion,
             'url_original' => $request->url_original,
-            'embed_url'    => $parsed['embed_url'],
-            'plataforma'   => $parsed['plataforma'],
+            'embed_url'    => $embed_url,
+            'archivo_path' => $archivo_path,
+            'plataforma'   => $plataforma,
             'agregado_por' => $nombre,
             'orden'        => 0,
         ]);

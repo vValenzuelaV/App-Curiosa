@@ -253,12 +253,12 @@
         }
 
         .player-wrapper.open {
-            max-height: 200px;
+            max-height: 400px;
             opacity: 1;
         }
 
         .player-wrapper.youtube-player.open {
-            max-height: 220px;
+            max-height: 400px;
         }
 
         .player-wrapper iframe {
@@ -549,13 +549,23 @@
                                             d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
                                     </svg>
                                     Spotify
-                                @else
+                                @elseif($cancion->plataforma === 'youtube')
                                     {{-- YouTube icon --}}
                                     <svg viewBox="0 0 24 24" fill="currentColor">
                                         <path
                                             d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                                     </svg>
                                     YouTube
+                                @elseif($cancion->plataforma === 'local_audio')
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                                    </svg>
+                                    Archivo (Audio)
+                                @elseif($cancion->plataforma === 'local_video')
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                                    </svg>
+                                    Archivo (Video)
                                 @endif
                             </div>
 
@@ -598,6 +608,7 @@
                             {{-- Player embed --}}
                             <div class="player-wrapper {{ $cancion->plataforma === 'youtube' ? 'youtube-player' : '' }}"
                                 id="player-{{ $cancion->id }}" data-embed="{{ $cancion->embed_url }}"
+                                data-archivo="{{ $cancion->archivo_path ? asset('music/' . $cancion->archivo_path) : '' }}"
                                 data-plataforma="{{ $cancion->plataforma }}">
                             </div>
                         </div>
@@ -648,7 +659,7 @@
                 <button class="modal-close" onclick="closeModal()">×</button>
             </div>
 
-            <form id="cancion-form" method="POST">
+            <form id="cancion-form" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div id="form-method-container"></div>
 
@@ -669,10 +680,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="cancion-url">Link de Spotify o YouTube *</label>
+                    <label for="cancion-url">Link de Spotify o YouTube <span style="text-transform: none; font-weight: 400;">(opcional si subes archivo)</span></label>
                     <input type="text" id="cancion-url" name="url_original" class="form-control"
-                        placeholder="https://open.spotify.com/track/... o https://youtu.be/..." required>
+                        placeholder="https://open.spotify.com/track/... o https://youtu.be/...">
                     <span class="form-hint">Pega el link directo de una canción, playlist o video de YouTube.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="cancion-archivo">O sube un archivo de música/video</label>
+                    <input type="file" id="cancion-archivo" name="archivo_musica" class="form-control"
+                        accept="audio/*,video/mp4,video/webm">
+                    <span class="form-hint">Sube un archivo .mp3, .wav, .mp4. Máx 15MB.</span>
                 </div>
 
                 @auth
@@ -717,19 +735,33 @@
                 setTimeout(() => { wrapper.innerHTML = ''; }, 500);
                 openPlayers.delete(id);
             } else {
-                // Abrir: insertar iframe
+                // Abrir: insertar iframe o video/audio
                 const embedUrl = wrapper.dataset.embed;
-                let height = plataforma === 'spotify' ? '80' : '200';
-                if (plataforma === 'youtube') {
-                    wrapper.classList.add('youtube-player');
+                const archivoUrl = wrapper.dataset.archivo;
+                
+                if (plataforma === 'local_audio') {
+                    wrapper.innerHTML = `<audio controls style="width:100%; margin-top: 10px;" autoplay>
+                                            <source src="${archivoUrl}" type="audio/mpeg">
+                                            Tu navegador no soporta el elemento de audio.
+                                        </audio>`;
+                } else if (plataforma === 'local_video') {
+                    wrapper.innerHTML = `<video controls style="width:100%; max-height:300px; border-radius:4px; margin-top:10px;" autoplay>
+                                            <source src="${archivoUrl}" type="video/mp4">
+                                            Tu navegador no soporta el elemento de video.
+                                        </video>`;
+                } else {
+                    let height = plataforma === 'spotify' ? '352' : '200';
+                    if (plataforma === 'youtube') {
+                        wrapper.classList.add('youtube-player');
+                    }
+                    wrapper.innerHTML = `<iframe
+                                            src="${embedUrl}"
+                                            height="${height}"
+                                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                            loading="lazy"
+                                            allowfullscreen>
+                                        </iframe>`;
                 }
-                wrapper.innerHTML = `<iframe
-                                        src="${embedUrl}"
-                                        height="${height}"
-                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                        loading="lazy"
-                                        allowfullscreen>
-                                    </iframe>`;
 
                 // Forzar reflow antes de agregar la clase
                 wrapper.getBoundingClientRect();
@@ -763,6 +795,7 @@
             inputArtista.value = '';
             inputDesc.value = '';
             inputUrl.value = '';
+            document.getElementById('cancion-archivo').value = '';
             if (inputOrden) inputOrden.value = '0';
             modal.style.display = 'flex';
         }
@@ -779,6 +812,7 @@
                 inputDesc.value = document.getElementById('cancion-desc-' + id)?.innerText ?? '';
                 // La URL original no está en el DOM; dejarla vacía para que el usuario la reingrese
                 inputUrl.value = '';
+                document.getElementById('cancion-archivo').value = '';
                 if (inputOrden) inputOrden.value = '0';
 
                 // Añadir una nota informativa al campo URL

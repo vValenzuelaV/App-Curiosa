@@ -12,6 +12,7 @@ class Cancion extends Model
         'titulo',
         'artista',
         'descripcion',
+        'archivo_path',
         'url_original',
         'embed_url',
         'plataforma',
