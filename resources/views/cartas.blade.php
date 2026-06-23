@@ -460,7 +460,7 @@
                                 <div class="response-item">
                                     <div class="response-item-meta">
                                         <span style="font-weight:600; color: var(--accent-rose);">{{ $respuesta->nombre }}</span>
-                                        <span>{{ \Carbon\Carbon::parse($respuesta->created_at)->locale('es')->isoFormat('LL [a las] HH:mm') }}</span>
+                                        <span>{{ \Carbon\Carbon::parse($respuesta->created_at)->setTimezone('America/Santiago')->locale('es')->isoFormat('LL [a las] HH:mm') }}</span>
                                     </div>
                                     <div class="response-item-text" id="respuesta-text-{{ $respuesta->id }}">
                                         {{ $respuesta->comentario }}

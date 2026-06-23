@@ -298,7 +298,7 @@
                         <span class="author-name">{{ $respuesta->nombre }}</span>
                     </div>
                     <span class="respuesta-date">
-                        {{ \Carbon\Carbon::parse($respuesta->created_at)->locale('es')->isoFormat('LL [a las] HH:mm') }}
+                        {{ \Carbon\Carbon::parse($respuesta->created_at)->setTimezone('America/Santiago')->locale('es')->isoFormat('LL [a las] HH:mm') }}
                     </span>
                 </div>
 

@@ -213,7 +213,7 @@ class RelationshipController extends Controller
                 'titulo'     => $dibujo->titulo,
                 'imagen'     => $dibujo->imagen,
                 'creado_por' => $dibujo->creado_por,
-                'fecha'      => $dibujo->created_at->format('d/m/Y H:i'),
+                'fecha'      => $dibujo->created_at->setTimezone('America/Santiago')->format('d/m/Y H:i'),
             ],
         ]);
     }
