@@ -399,7 +399,7 @@ class AdminController extends Controller
     public function updateRespuesta(Request $request, $id)
     {
         $request->validate([
-            'comentario' => 'required|string|max:1000',
+            'comentario' => 'required|string|max:550',
         ]);
 
         $respuesta = respuestas::findOrFail($id);

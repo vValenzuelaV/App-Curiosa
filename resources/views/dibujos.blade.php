@@ -606,7 +606,7 @@
                             <span style="color: var(--accent-gold);">♥</span>
                             {{ $dibujo->creado_por }}
                         </span>
-                        <span class="dibujo-fecha">{{ $dibujo->created_at->format('d/m/Y') }}</span>
+                        <span class="dibujo-fecha">{{ $dibujo->created_at->format('d/m/Y H:i') }}</span>
                     </div>
                     @auth
                         <div style="margin-top: 0.4rem;">

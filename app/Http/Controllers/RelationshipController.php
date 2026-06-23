@@ -70,7 +70,7 @@ class RelationshipController extends Controller
         $hasSessionName = session()->has('visitor_name');
 
         $rules = [
-            'comentario' => 'required|string|max:1000',
+            'comentario' => 'required|string|max:550',
         ];
 
         if (!$hasSessionName) {
@@ -213,7 +213,7 @@ class RelationshipController extends Controller
                 'titulo'     => $dibujo->titulo,
                 'imagen'     => $dibujo->imagen,
                 'creado_por' => $dibujo->creado_por,
-                'fecha'      => $dibujo->created_at->format('d/m/Y'),
+                'fecha'      => $dibujo->created_at->format('d/m/Y H:i'),
             ],
         ]);
     }
