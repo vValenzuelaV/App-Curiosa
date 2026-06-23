@@ -829,5 +829,19 @@
         window.addEventListener('click', function (e) {
             if (e.target === modal) closeModal();
         });
+
+        // Validación de tamaño de archivo antes de enviar
+        form.addEventListener('submit', function (e) {
+            const archivoInput = document.getElementById('cancion-archivo');
+            if (archivoInput && archivoInput.files.length > 0) {
+                const fileSize = archivoInput.files[0].size;
+                const maxSize = 15 * 1024 * 1024; // 15MB
+                
+                if (fileSize > maxSize) {
+                    e.preventDefault();
+                    alert('El archivo que intentas subir es demasiado grande. Por favor, asegúrate de que pese menos de 15MB.');
+                }
+            }
+        });
     </script>
 @endsection
