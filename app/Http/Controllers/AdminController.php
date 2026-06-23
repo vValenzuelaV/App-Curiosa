@@ -233,6 +233,13 @@ class AdminController extends Controller
      */
     public function storeCancion(Request $request)
     {
+        $file = $request->file('archivo_musica');
+        if ($file && !$file->isValid()) {
+            return back()->withErrors([
+                'archivo_musica' => 'Error al subir el archivo (PHP): ' . $file->getErrorMessage() . '. Verifica que el archivo no exceda el límite del servidor.'
+            ])->withInput();
+        }
+
         $request->validate([
             'titulo'      => 'required|string|max:255',
             'artista'     => 'nullable|string|max:255',
@@ -291,6 +298,13 @@ class AdminController extends Controller
      */
     public function updateCancion(Request $request, $id)
     {
+        $file = $request->file('archivo_musica');
+        if ($file && !$file->isValid()) {
+            return back()->withErrors([
+                'archivo_musica' => 'Error al subir el archivo (PHP): ' . $file->getErrorMessage() . '. Verifica que el archivo no exceda el límite del servidor.'
+            ])->withInput();
+        }
+
         $request->validate([
             'titulo'      => 'required|string|max:255',
             'artista'     => 'nullable|string|max:255',
