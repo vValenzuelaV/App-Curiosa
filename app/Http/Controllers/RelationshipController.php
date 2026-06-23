@@ -70,7 +70,7 @@ class RelationshipController extends Controller
         $hasSessionName = session()->has('visitor_name');
 
         $rules = [
-            'comentario' => 'required|string|max:550',
+            'comentario' => 'required|string|max:1000',
         ];
 
         if (!$hasSessionName) {
