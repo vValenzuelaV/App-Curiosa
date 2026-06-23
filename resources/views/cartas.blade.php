@@ -226,7 +226,36 @@
 
     .response-form-footer {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .char-counter {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        transition: color 0.2s;
+    }
+
+    .char-counter.warning {
+        color: #D97706;
+        font-weight: 600;
+    }
+
+    .char-counter.danger {
+        color: #B91C1C;
+        font-weight: 700;
+    }
+
+    .form-error-inline {
+        background: #FEF2F2;
+        border-left: 3px solid #B91C1C;
+        color: #7F1D1D;
+        font-size: 0.82rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 3px;
+        margin-bottom: 0.75rem;
+        line-height: 1.5;
     }
 
     /* CONTROLES DE ADMINISTRACIÓN */
@@ -494,20 +523,40 @@
                             <div class="response-form-title">Dejar una respuesta o pensamiento</div>
                         @endif
 
-                        <form action="{{ route('respuestas.store', $carta->id) }}" method="POST" class="response-form">
+                        <form action="{{ route('respuestas.store', $carta->id) }}" method="POST" class="response-form" id="form-carta-{{ $carta->id }}">
                             @csrf
-                            
-                            @if(!session()->has('visitor_name'))
-                                <div class="form-group" style="margin-bottom: 1.25rem;">
-                                    <label for="nombre-respuesta-{{ $carta->id }}">Tu Nombre</label>
-                                    <input type="text" name="nombre" id="nombre-respuesta-{{ $carta->id }}" class="form-control" required placeholder="Dinos tu nombre para responder (ej. Feñi)" style="background-color: var(--bg-primary);">
+
+                            {{-- Mostrar errores de validación de esta carta específica --}}
+                            @if($errors->any() && old('_carta_id') == $carta->id)
+                                <div class="form-error-inline">
+                                    @foreach($errors->all() as $error)
+                                        <div>⚠ {{ $error }}</div>
+                                    @endforeach
                                 </div>
                             @endif
 
-                            <textarea name="comentario" placeholder="Escribe aquí lo que sientes, tus pensamientos o cualquier cosa que desees expresarme..." required></textarea>
-                            
+                            <input type="hidden" name="_carta_id" value="{{ $carta->id }}">
+
+                            @if(!session()->has('visitor_name'))
+                                <div class="form-group" style="margin-bottom: 1.25rem;">
+                                    <label for="nombre-respuesta-{{ $carta->id }}">Tu Nombre</label>
+                                    <input type="text" name="nombre" id="nombre-respuesta-{{ $carta->id }}" class="form-control" required
+                                        placeholder="Dinos tu nombre para responder (ej. Feñi)"
+                                        value="{{ old('nombre') }}"
+                                        style="background-color: var(--bg-primary);">
+                                </div>
+                            @endif
+
+                            <textarea name="comentario"
+                                id="comentario-{{ $carta->id }}"
+                                placeholder="Escribe aquí lo que sientes, tus pensamientos o cualquier cosa que desees expresarme..."
+                                maxlength="1000"
+                                required
+                                oninput="updateCounter({{ $carta->id }}, this.value.length)">{{ old('comentario') }}</textarea>
+
                             <div class="response-form-footer">
-                                <button type="submit" class="btn btn-primary">
+                                <span class="char-counter" id="counter-{{ $carta->id }}">0 / 1000</span>
+                                <button type="submit" class="btn btn-primary" onclick="return validateRespuesta({{ $carta->id }})">
                                     Enviar Respuesta
                                 </button>
                             </div>
@@ -645,6 +694,37 @@
         .catch(err => console.error("Error al registrar lectura de carta:", err));
     }
 
+    // Contador de caracteres en tiempo real
+    function updateCounter(cartaId, length) {
+        const counter = document.getElementById(`counter-${cartaId}`);
+        if (!counter) return;
+        counter.textContent = `${length} / 1000`;
+        counter.classList.remove('warning', 'danger');
+        if (length >= 1000) {
+            counter.classList.add('danger');
+        } else if (length >= 800) {
+            counter.classList.add('warning');
+        }
+    }
+
+    // Validación del lado del cliente antes de enviar
+    function validateRespuesta(cartaId) {
+        const textarea = document.getElementById(`comentario-${cartaId}`);
+        const text = textarea ? textarea.value.trim() : '';
+
+        if (text.length === 0) {
+            alert('⚠ Por favor escribe algo antes de enviar tu respuesta.');
+            textarea.focus();
+            return false;
+        }
+        if (text.length > 1000) {
+            alert(`⚠ Tu respuesta tiene ${text.length} caracteres. El límite es de 1000 caracteres. Por favor acórtala un poco.`);
+            textarea.focus();
+            return false;
+        }
+        return true;
+    }
+
     // Si abrimos la página con un Hash directo a una carta, desplegarla
     document.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash;
@@ -659,6 +739,23 @@
                 }, 400);
             }
         }
+
+        // Si hay errores, abrir y desplazar hasta la carta que los tiene
+        @if($errors->any() && old('_carta_id'))
+            const cartaConError = '{{ old("_carta_id") }}';
+            if (cartaConError) {
+                setTimeout(() => {
+                    const env = document.getElementById(`envelope-${cartaConError}`);
+                    if (env && !env.classList.contains('expanded')) {
+                        toggleLetter(cartaConError);
+                    }
+                    setTimeout(() => {
+                        const form = document.getElementById(`form-carta-${cartaConError}`);
+                        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 650);
+                }, 300);
+            }
+        @endif
     });
 </script>
 
